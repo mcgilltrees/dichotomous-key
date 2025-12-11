@@ -72,22 +72,6 @@ function getQuestionNumber(node) {
   return typeof node.questionNumber === "number" ? node.questionNumber : null;
 }
 
-// Base path for GitHub Pages (matches next.config.mjs)
-// Next.js should handle basePath automatically, but we ensure it's applied
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
-
-// Helper to ensure basePath is applied to image paths
-function ensureBasePath(path) {
-  if (!path || typeof path !== "string") return path;
-  
-  // If we have a basePath and the path doesn't already include it, prepend it
-  if (BASE_PATH && path.startsWith("/") && !path.startsWith(BASE_PATH)) {
-    return `${BASE_PATH}${path}`;
-  }
-  
-  return path;
-}
-
 function getOptionImageSrc(activeKey, node, optionIndex) {
   const genusIndex = GENUS_IMAGE_INDEX[activeKey] || GENUS_IMAGE_INDEX.main;
   const questionNumber = getQuestionNumber(node);
@@ -99,28 +83,33 @@ function getOptionImageSrc(activeKey, node, optionIndex) {
 
   if (!asset) return null;
 
-  let imagePath = null;
-  
+  // Next.js with basePath configured will automatically handle path prefixes
+  // for all assets processed by webpack, so we can return the path as-is
   if (typeof asset === "string") {
-    imagePath = asset;
-  } else if (typeof asset === "object") {
+    return asset;
+  }
+  
+  if (typeof asset === "object") {
     if (asset.src && typeof asset.src === "string") {
-      imagePath = asset.src;
-    } else if (asset.default) {
+      return asset.src;
+    }
+    
+    if (asset.default) {
       if (
         typeof asset.default === "object" &&
         asset.default.src &&
         typeof asset.default.src === "string"
       ) {
-        imagePath = asset.default.src;
-      } else if (typeof asset.default === "string") {
-        imagePath = asset.default;
+        return asset.default.src;
+      }
+      
+      if (typeof asset.default === "string") {
+        return asset.default;
       }
     }
   }
 
-  // Ensure basePath is applied (Next.js should handle this, but we double-check)
-  return imagePath ? ensureBasePath(imagePath) : null;
+  return null;
 }
 
 // Basic dichotomous key engine
