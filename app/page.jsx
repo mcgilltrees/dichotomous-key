@@ -72,6 +72,22 @@ function getQuestionNumber(node) {
   return typeof node.questionNumber === "number" ? node.questionNumber : null;
 }
 
+// Base path for GitHub Pages (matches next.config.mjs)
+// Next.js should handle basePath automatically, but we ensure it's applied
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+// Helper to ensure basePath is applied to image paths
+function ensureBasePath(path) {
+  if (!path || typeof path !== "string") return path;
+  
+  // If we have a basePath and the path doesn't already include it, prepend it
+  if (BASE_PATH && path.startsWith("/") && !path.startsWith(BASE_PATH)) {
+    return `${BASE_PATH}${path}`;
+  }
+  
+  return path;
+}
+
 function getOptionImageSrc(activeKey, node, optionIndex) {
   const genusIndex = GENUS_IMAGE_INDEX[activeKey] || GENUS_IMAGE_INDEX.main;
   const questionNumber = getQuestionNumber(node);
@@ -83,26 +99,28 @@ function getOptionImageSrc(activeKey, node, optionIndex) {
 
   if (!asset) return null;
 
-  if (typeof asset === "string") return asset;
-  if (typeof asset === "object") {
-    if (asset.src && typeof asset.src === "string") return asset.src;
-
-    if (asset.default) {
+  let imagePath = null;
+  
+  if (typeof asset === "string") {
+    imagePath = asset;
+  } else if (typeof asset === "object") {
+    if (asset.src && typeof asset.src === "string") {
+      imagePath = asset.src;
+    } else if (asset.default) {
       if (
         typeof asset.default === "object" &&
         asset.default.src &&
         typeof asset.default.src === "string"
       ) {
-        return asset.default.src;
-      }
-
-      if (typeof asset.default === "string") {
-        return asset.default;
+        imagePath = asset.default.src;
+      } else if (typeof asset.default === "string") {
+        imagePath = asset.default;
       }
     }
   }
 
-  return null;
+  // Ensure basePath is applied (Next.js should handle this, but we double-check)
+  return imagePath ? ensureBasePath(imagePath) : null;
 }
 
 // Basic dichotomous key engine
